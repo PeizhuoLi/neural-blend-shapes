@@ -34,13 +34,13 @@ python demo.py --pose_file=./eval_constant/sequences/greeting.npy --obj_path=./e
 
 The nice greeting animation showed above will be saved in `demo/obj` as obj files. Besides, the generated skeleton will be saved as `demo/skeleton.bvh` and the skinning weight matrix will be saved as `demo/weight.npy`.
 
-If you are also interested in traditional linear blend skinning(LBS) technique results generated with our rig, you can also specify `--envelope_only=1` to evaluate our model with only envelope branch.
+If you are also interested in traditional linear blend skinning(LBS) technique results generated with our rig, you can specify `--envelope_only=1` to evaluate our model with only envelope branch.
 
-We also provided several other meshes and animation sequences, feel free to try their combinations!
+We also provide several other meshes and animation sequences. Feel free to try their combinations!
 
 ### Test on Customized Meshes
 
-You may also try to run our model with your own meshes by pointing the `--obj_path` argument to input mesh. Please make sure your mesh is triangulated and has a consistent upright and front facing orientation. Since our model requires the input meshes are spatially aligned, please also specify `--normalize=1`. Alternatively, you can try to scale and translate your mesh to align the provided `eval_constant/meshes/smpl_std.obj` and specify `--normalize=0`.
+You may try to run our model with your own meshes by pointing the `--obj_path` argument to the input mesh. Please make sure your mesh is triangulated and has a consistent upright and front facing orientation. Since our model requires the input meshes are spatially aligned, please specify `--normalize=1`. Alternatively, you can try to scale and translate your mesh to align the provided `eval_constant/meshes/smpl_std.obj` and specify `--normalize=0`.
 
 ### Evaluation
 
