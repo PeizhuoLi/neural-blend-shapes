@@ -3,7 +3,7 @@
 ![Python](https://img.shields.io/badge/Python->=3.8-Blue?logo=python)  ![Pytorch](https://img.shields.io/badge/PyTorch->=1.8.0-Red?logo=pytorch)
 ![Blender](https://img.shields.io/badge/Blender-%3E=2.8-Orange?logo=blender)
 
-This repository provides an end-to-end library for automatic character rigging and blend shapes generation . It is based on our work [Learning Skeletal Articulations with Neural Blend Shapes](https://peizhuoli.github.io/neural-blend-shapes/index.html) that is published in SIGGRAPH 2021.
+This repository provides an end-to-end library for automatic character rigging and blend shapes generation along with visualization. It is based on our work [Learning Skeletal Articulations with Neural Blend Shapes](https://peizhuoli.github.io/neural-blend-shapes/index.html) that is published in SIGGRAPH 2021.
 
 <img src="https://peizhuoli.github.io/neural-blend-shapes/images/video_teaser.gif" slign="center">
 
@@ -34,13 +34,13 @@ python demo.py --pose_file=./eval_constant/sequences/greeting.npy --obj_path=./e
 
 The nice greeting animation showed above will be saved in `demo/obj` as obj files. Besides, the generated skeleton will be saved as `demo/skeleton.bvh` and the skinning weight matrix will be saved as `demo/weight.npy`.
 
-If you are also interested in traditional linear blend skinning(LBS) technique results generated with our rig, you can specify `--envelope_only=1` to evaluate our model with only envelope branch.
+If you are interested in traditional linear blend skinning(LBS) technique result generated with our rig, you can specify `--envelope_only=1` to evaluate our model with only envelope branch.
 
 We also provide several other meshes and animation sequences. Feel free to try their combinations!
 
 ### Test on Customized Meshes
 
-You may try to run our model with your own meshes by pointing the `--obj_path` argument to the input mesh. Please make sure your mesh is triangulated and has a consistent upright and front facing orientation. Since our model requires the input meshes are spatially aligned, please specify `--normalize=1`. Alternatively, you can try to scale and translate your mesh to align the provided `eval_constant/meshes/smpl_std.obj` and specify `--normalize=0`.
+You may try to run our model with your own meshes by pointing the `--obj_path` argument to the input mesh. Please make sure your mesh is triangulated and has a consistent upright and front facing orientation. Since our model requires the input meshes are spatially aligned, please specify `--normalize=1`. Alternatively, you can try to scale and translate your mesh to align the provided `eval_constant/meshes/smpl_std.obj` without specifying `--normalize=1`.
 
 ### Evaluation
 
@@ -61,14 +61,14 @@ Note that due to the limitation of Blender, you cannot run Eevee render engine w
 We also provide several arguments to control the behavior of the scripts. Please refer to the code for more details. To pass arguments to python script in blender, please do following:
 
 ~~~bash
-blender [blend file path(optional)] -P [python script path] [-b] -- --arg1 [ARG1] --arg2 [ARG2]
+blender [blend file path (optional)] -P [python script path] [-b (running at backstage, optional)] -- --arg1 [ARG1] --arg2 [ARG2]
 ~~~
 
 
 
 ### Animation
 
-We provide a simple light and camera setting in `eval_constant/simple_scene.blend`. We use `ffmpeg` to convert images into video. Pealse make sure you have installed it before running. You may need to adjust it before using. To render the obj files genrated above, run
+We provide a simple light and camera setting in `eval_constant/simple_scene.blend`. You may need to adjust it before using. We use `ffmpeg` to convert images into video. Pealse make sure you have installed it before running. To render the obj files genrated above, run
 
 ~~~bash
 cd blender_script
