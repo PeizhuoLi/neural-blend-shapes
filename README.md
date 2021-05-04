@@ -40,7 +40,7 @@ We also provided several other meshes and animation sequences, feel free to try 
 
 ### Test on Customized Meshes
 
-You may also try to run our model with your own meshes. Please make sure your mesh is triangulated and has a consistent upright and front facing orientation. Our model requires the input meshes are spatially aligned, so please also specify `--normalize=1`. Alternatively, you can try to scale and translate your mesh to align the provided `eval_constant/meshes/smpl_std.obj` and specify `--normalize=0`.
+You may also try to run our model with your own meshes by pointing the `--obj_path` argument to input mesh. Please make sure your mesh is triangulated and has a consistent upright and front facing orientation. Since our model requires the input meshes are spatially aligned, please also specify `--normalize=1`. Alternatively, you can try to scale and translate your mesh to align the provided `eval_constant/meshes/smpl_std.obj` and specify `--normalize=0`.
 
 ### Evaluation
 
@@ -58,7 +58,7 @@ We provide a simple wrapper of blender's python API (>=2.80) for rendering 3D me
 
 Note that due to the limitation of Blender, you cannot run Eevee render engine with a headless machine. 
 
-We also provide several parameters to control the behavior of the scripts. , please refer to the code for more details. To pass parameters to python script in blender, please do following:
+We also provide several arguments to control the behavior of the scripts. Please refer to the code for more details. To pass arguments to python script in blender, please do following:
 
 ~~~bash
 blender [blend file path(optional)] -P [python script path] [-b] -- --arg1 [ARG1] --arg2 [ARG2]
@@ -88,7 +88,7 @@ blender -P vertex_color.py
 
 You will see something similar to this if the model works as expected:
 
-<img src="https://peizhuoli.github.io/neural-blend-shapes/images/skinning_vis.png" slign="center" width="30%">
+<img src="https://peizhuoli.github.io/neural-blend-shapes/images/skinning_vis.png" slign="center" width="50%">
 
 Mean while, you can import the generated skeleton (in `demo/skeleton.bvh`) to Blender. For skeleton rendering, please refer to [deep-motion-editing](https://github.com/DeepMotionEditing/deep-motion-editing).
 
@@ -118,6 +118,8 @@ If you use this code for your research, please cite our papers:
   publisher = {ACM}
 }
 ~~~
+
+
 
 
 
