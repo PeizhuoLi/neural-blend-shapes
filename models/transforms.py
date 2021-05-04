@@ -1,6 +1,4 @@
 import torch
-from scipy.spatial.transform.rotation import Rotation as R
-import numpy as np
 
 
 def batch_mm(matrix, matrix_batch):
@@ -110,36 +108,6 @@ def aa2mat(rots):
     quat = aa2quat(rots)
     mat = quat2mat(quat)
     return mat
-
-# todo: Finish implementation of these two models
-def mat2quat(mat):
-    """
-    Convert mat in SO(3) to quaternions.
-    @attention: This one does't support back propagate
-    @param mat: (*, 3, 3)
-    @return: wxyz quat: (*, 4)
-    """
-    original_shape = mat.shape[:-2]
-    rots = mat.reshape(-1, 3, 3)
-    rots = rots.detach().cpu().numpy()
-    rots = R.from_matrix(rots)
-    quats = rots.as_quat()
-    quats_res = np.empty_like(quats)
-    quats_res[:, 0] = quats[:, 3]
-    quats_res[:, 1:] = quats[:, :3]
-    quats_res = torch.tensor(quats_res, device=mat.device, dtype=mat.dtype)
-    quats_res = quats_res.reshape(original_shape + (4, ))
-    return quats_res
-
-
-def dual_quat_normalize(dual_quat):
-    """
-    @param dual_quat: (*, 7)
-    @return: (*, 7)
-    """
-    quat_rot = dual_quat[..., :4]
-    norm = quat_rot.norm(dim=-1, keepdim=True)
-    return dual_quat / norm
 
 
 def inv_affine(mat):
