@@ -104,7 +104,7 @@ Part of the test models are taken from and [SMPL](https://smpl.is.tue.mpg.de/en)
 
 ## Citation
 
-If you use this code for your research, please cite our papers:
+If you use this code for your research, please cite our paper:
 
 ~~~bibtex
 @article{li2021learning,
