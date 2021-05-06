@@ -3,7 +3,7 @@
 ![Python](https://img.shields.io/badge/Python->=3.8-Blue?logo=python)  ![Pytorch](https://img.shields.io/badge/PyTorch->=1.8.0-Red?logo=pytorch)
 ![Blender](https://img.shields.io/badge/Blender-%3E=2.8-Orange?logo=blender)
 
-This repository provides an end-to-end library for automatic character rigging and blend shapes generation as well as a visualization tool. It is based on our work [Learning Skeletal Articulations with Neural Blend Shapes](https://peizhuoli.github.io/neural-blend-shapes/index.html) that is published in SIGGRAPH 2021.
+This repository provides an end-to-end library for automatic character rigging, skinning, and blend shapes generation, as well as a visualization tool. It is based on our work [Learning Skeletal Articulations with Neural Blend Shapes](https://peizhuoli.github.io/neural-blend-shapes/index.html) that is published in SIGGRAPH 2021.
 
 <img src="https://peizhuoli.github.io/neural-blend-shapes/images/video_teaser.gif" slign="center">
 
@@ -26,7 +26,7 @@ Or you may install the following packages (and their dependencies) manually:
 
 ## Quick Start
 
-We provide a pretrained model that is dedicated for biped character. Download and extract the pretrained model from [Google Drive](https://drive.google.com/file/d/1S_JQY2N4qx1V6micWiIiNkHercs557rG/view?usp=sharing) or [Baidu Disk](https://pan.baidu.com/s/1y8iBqf1QfxcPWO0AWd2aVw) (9ras) and put the `pre_trained` folder under the project directory. Run
+We provide a pretrained model that is dedicated for biped characters. Download and extract the pretrained model from [Google Drive](https://drive.google.com/file/d/1S_JQY2N4qx1V6micWiIiNkHercs557rG/view?usp=sharing) or [Baidu Disk](https://pan.baidu.com/s/1y8iBqf1QfxcPWO0AWd2aVw) (9ras) and put the `pre_trained` folder under the project directory. Run
 
 ~~~bash
 python demo.py --pose_file=./eval_constant/sequences/greeting.npy --obj_path=./eval_constant/meshes/maynard.obj
@@ -34,7 +34,7 @@ python demo.py --pose_file=./eval_constant/sequences/greeting.npy --obj_path=./e
 
 The nice greeting animation showed above will be saved in `demo/obj` as obj files. In addition, the generated skeleton will be saved as `demo/skeleton.bvh` and the skinning weight matrix will be saved as `demo/weight.npy`.
 
-If you are interested in traditional linear blend skinning(LBS) technique result generated with our rig, you can specify `--envelope_only=1` to evaluate our model only with the envelope branch.
+If you are interested in traditional linear blend skinning (LBS) technique result generated with our rig, you can specify `--envelope_only=1` to evaluate our model only with the envelope branch.
 
 We also provide other several meshes and animation sequences. Feel free to try their combinations!
 
@@ -79,7 +79,7 @@ The rendered per-frame image will be saved in `demo/images` and composited video
 
 ### Skinning Weight
 
-Visualize the skinning weight is a good sanity check to see whether the model works as expected. We provide a script using Blender's built-in ShaderNodeVertexColor to visualize the skinning weight. Simply run
+Visualizing the skinning weight is a good sanity check to see whether the model works as expected. We provide a script using Blender's built-in ShaderNodeVertexColor to visualize the skinning weight. Simply run
 
 ~~~bash
 cd blender_script
@@ -90,7 +90,7 @@ You will see something similar to this if the model works as expected:
 
 <img src="https://peizhuoli.github.io/neural-blend-shapes/images/skinning_vis.png" slign="center" width="50%">
 
-Mean while, you can import the generated skeleton (in `demo/skeleton.bvh`) to Blender. For skeleton rendering, please refer to [deep-motion-editing](https://github.com/DeepMotionEditing/deep-motion-editing).
+Meanwhile, you can import the generated skeleton (in `demo/skeleton.bvh`) to Blender. For skeleton rendering, please refer to [deep-motion-editing](https://github.com/DeepMotionEditing/deep-motion-editing).
 
 ## Acknowledgements
 
