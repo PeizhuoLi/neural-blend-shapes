@@ -9,7 +9,7 @@ This repository provides an end-to-end library for automatic character rigging a
 
 ## Prerequisites
 
-Our code has been tested on Ubuntu 18.04. Befor starting, please configure your Anaconda environment by
+Our code has been tested on Ubuntu 18.04. Before starting, please configure your Anaconda environment by
 
 ~~~bash
 conda env create -f environment.yaml
@@ -26,7 +26,7 @@ Or you may install the following packages (and their dependencies) manually:
 
 ## Quick Start
 
-We provide a pretrained model that is dedicated for biped character. Download and extracat the pretrained model from [Google Drive](https://drive.google.com/file/d/1S_JQY2N4qx1V6micWiIiNkHercs557rG/view?usp=sharing) or [Baidu Disk](https://pan.baidu.com/s/1y8iBqf1QfxcPWO0AWd2aVw) (9ras) and put the `pre_trained` folder under the project directory. Run
+We provide a pretrained model that is dedicated for biped character. Download and extract the pretrained model from [Google Drive](https://drive.google.com/file/d/1S_JQY2N4qx1V6micWiIiNkHercs557rG/view?usp=sharing) or [Baidu Disk](https://pan.baidu.com/s/1y8iBqf1QfxcPWO0AWd2aVw) (9ras) and put the `pre_trained` folder under the project directory. Run
 
 ~~~bash
 python demo.py --pose_file=./eval_constant/sequences/greeting.npy --obj_path=./eval_constant/meshes/maynard.obj
@@ -68,7 +68,7 @@ blender [blend file path (optional)] -P [python script path] [-b (running at bac
 
 ### Animation
 
-We provide a simple light and camera setting in `eval_constant/simple_scene.blend`. You may need to adjust it before using. We use `ffmpeg` to convert images into video. Pealse make sure you have installed it before running. To render the obj files genrated above, run
+We provide a simple light and camera setting in `eval_constant/simple_scene.blend`. You may need to adjust it before using. We use `ffmpeg` to convert images into video. Please make sure you have installed it before running. To render the obj files generated above, run
 
 ~~~bash
 cd blender_script
