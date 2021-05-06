@@ -3,13 +3,13 @@
 ![Python](https://img.shields.io/badge/Python->=3.8-Blue?logo=python)  ![Pytorch](https://img.shields.io/badge/PyTorch->=1.8.0-Red?logo=pytorch)
 ![Blender](https://img.shields.io/badge/Blender-%3E=2.8-Orange?logo=blender)
 
-This repository provides an end-to-end library for automatic character rigging and blend shapes generation along with visualization. It is based on our work [Learning Skeletal Articulations with Neural Blend Shapes](https://peizhuoli.github.io/neural-blend-shapes/index.html) that is published in SIGGRAPH 2021.
+This repository provides an end-to-end library for automatic character rigging and blend shapes generation as well as a visualization tool. It is based on our work [Learning Skeletal Articulations with Neural Blend Shapes](https://peizhuoli.github.io/neural-blend-shapes/index.html) that is published in SIGGRAPH 2021.
 
 <img src="https://peizhuoli.github.io/neural-blend-shapes/images/video_teaser.gif" slign="center">
 
 ## Prerequisites
 
-Our code has been tested on Ubuntu 18.04. Befor starting, please configure the Anaconda environment by
+Our code has been tested on Ubuntu 18.04. Befor starting, please configure your Anaconda environment by
 
 ~~~bash
 conda env create -f environment.yaml
@@ -32,11 +32,11 @@ We provide a pretrained model that is dedicated for biped character. Download an
 python demo.py --pose_file=./eval_constant/sequences/greeting.npy --obj_path=./eval_constant/meshes/maynard.obj
 ~~~
 
-The nice greeting animation showed above will be saved in `demo/obj` as obj files. Besides, the generated skeleton will be saved as `demo/skeleton.bvh` and the skinning weight matrix will be saved as `demo/weight.npy`.
+The nice greeting animation showed above will be saved in `demo/obj` as obj files. In addition, the generated skeleton will be saved as `demo/skeleton.bvh` and the skinning weight matrix will be saved as `demo/weight.npy`.
 
-If you are interested in traditional linear blend skinning(LBS) technique result generated with our rig, you can specify `--envelope_only=1` to evaluate our model with only envelope branch.
+If you are interested in traditional linear blend skinning(LBS) technique result generated with our rig, you can specify `--envelope_only=1` to evaluate our model only with the envelope branch.
 
-We also provide several other meshes and animation sequences. Feel free to try their combinations!
+We also provide other several meshes and animation sequences. Feel free to try their combinations!
 
 ### Test on Customized Meshes
 
