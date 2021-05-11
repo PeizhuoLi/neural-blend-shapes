@@ -71,6 +71,16 @@ def get_parser():
     return parser
 
 
+def change_shading_mode(shading_mode):
+    """
+    https://blender.stackexchange.com/questions/124347/blender-2-8-python-code-to-switch-shading-mode-between-wireframe-and-solid-mo/124427
+    """
+    for area in bpy.context.workspace.screens[0].areas:
+        for space in area.spaces:
+            if space.type == 'VIEW_3D':
+                space.shading.type = shading_mode
+
+
 if __name__ == '__main__':
     parser = get_parser()
     argv = sys.argv
@@ -80,16 +90,17 @@ if __name__ == '__main__':
         argv = argv[argv.index("--") + 1:]
     args = parser.parse_args(argv)
 
-    bpy.ops.object.select_all(action='DESELECT')
+    bpy.ops.object.select_all(action='SELECT')
+    bpy.ops.object.delete()
 
     weight = np.load(args.weight_path)
     color = weight2color(weight)
 
-    bpy.ops.import_scene.obj(filepath=args.obi, split_mode='OFF')
+    bpy.ops.import_scene.obj(filepath=args.obj_path, split_mode='OFF')
     me = bpy.context.selected_objects[0]
     bpy.ops.object.shade_smooth()
 
     load_vert_col(me, color)
     add_material_for_mesh([me])
 
-    bpy.context.space_data.shading.type = 'MATERIAL'
+    change_shading_mode('MATERIAL')
