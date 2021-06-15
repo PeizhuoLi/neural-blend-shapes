@@ -100,7 +100,7 @@ The code in `models/skeleton.py` is adapted from [deep-motion-editing](https://g
 
 The code in `dataset/smpl_layer` is adapted from [smpl_pytorch](https://github.com/gulvarol/smplpytorch) by [@gulvarol](https://github.com/gulvarol).
 
-Part of the test models are taken from and [SMPL](https://smpl.is.tue.mpg.de/en), [MultiGarmentNetwork](https://github.com/bharat-b7/MultiGarmentNetwork) and [Adobe Mixamo](https://www.mixamo.com).
+Part of the test models are taken from [SMPL](https://smpl.is.tue.mpg.de/en), [MultiGarmentNetwork](https://github.com/bharat-b7/MultiGarmentNetwork) and [Adobe Mixamo](https://www.mixamo.com).
 
 ## Citation
 
