@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from scipy.spatial.transform.rotation import Rotation
 
 
 # rotation with shape frame * J * 3
@@ -11,8 +12,11 @@ def write_bvh(parent, offset, rotation, position, names, frametime, order, path,
 
     file_string = 'HIERARCHY\n'
 
+    seq = []
+
     def write_static(idx, prefix):
-        nonlocal parent, offset, rotation, names, order, endsite, file_string
+        nonlocal parent, offset, rotation, names, order, endsite, file_string, seq
+        seq.append(idx)
         if idx == 0:
             name_label = 'ROOT ' + names[idx]
             channel_label = 'CHANNELS 6 Xposition Yposition Zposition {}rotation {}rotation {}rotation'.format(*order)
@@ -45,7 +49,8 @@ def write_bvh(parent, offset, rotation, position, names, frametime, order, path,
     for i in range(frame):
         file_string += '%.6f %.6f %.6f ' % (position[i][0], position[i][1], position[i][2])
         for j in range(joint_num):
-            file_string += '%.6f %.6f %.6f ' % (rotation[i][j][0], rotation[i][j][1], rotation[i][j][2])
+            idx = seq[j]
+            file_string += '%.6f %.6f %.6f ' % (rotation[i][idx][0], rotation[i][idx][1], rotation[i][idx][2])
         file_string += '\n'
 
     file.write(file_string)
@@ -56,11 +61,18 @@ class WriterWrapper:
     def __init__(self, parents):
         self.parents = parents
 
-    def write(self, filename, offset):
+    def write(self, filename, offset, rot=None):
         if not isinstance(offset, torch.Tensor):
             offset = torch.tensor(offset)
         n_bone = offset.shape[0]
         pos = offset[0].unsqueeze(0)
-        rot = np.zeros((1, n_bone, 3))
+        if rot is None:
+            rot = np.zeros((1, n_bone, 3))
+        else:
+            rot = rot.reshape(-1, 3)
+            rot = Rotation.from_rotvec(rot)
+            rot = rot.as_euler('yzx', degrees=True)
+            rot = rot.reshape(-1, n_bone, 3)
+            pos = pos.repeat(rot.shape[0], 1)
         names = ['%02d' % i for i in range(n_bone)]
-        write_bvh(self.parents, offset, rot, pos, names, 1, 'xyz', filename)
+        write_bvh(self.parents, offset, rot, pos, names, 1, 'yzx', filename)
