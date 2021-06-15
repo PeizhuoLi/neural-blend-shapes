@@ -24,12 +24,13 @@ parent_smpl = [-1, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 12, 13, 14, 16, 17,
 def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--device', type=str, default='cpu')
-    parser.add_argument('--pose_file', type=str, default='./eval_constant/sequences/jump.npy')
+    parser.add_argument('--pose_file', type=str, default='./eval_constant/sequences/house-dance.npy')
     parser.add_argument('--model_path', type=str, default='./pre_trained')
-    parser.add_argument('--obj_path', type=str, default='./eval_constant/meshes/alien-soldier.obj')
+    parser.add_argument('--obj_path', type=str, default='./eval_constant/meshes/artist-2.obj')
     parser.add_argument('--result_path', type=str, default='./demo')
     parser.add_argument('--normalize', type=int, default=0)
     parser.add_argument('--envelope_only', type=int, default=0)
+    parser.add_argument('--animated_bvh', type=int, default=0)
     return parser
 
 
@@ -118,11 +119,6 @@ def main():
     model_args.normalize = args.normalize
 
     test_pose, test_loc = load_test_anim(args.pose_file, device)
-    test_pose = test_pose[:2]
-    test_pose = torch.zeros_like(test_pose)
-    test_pose[:, 1] = 1
-    test_pose[:, 2] = 1
-    test_pose[:, :3] = torch.tensor([-0.30808473,  0.74378234,  0.74378234])
 
     topo_loader = TopologyLoader(device=device, debug=False)
     mesh = prepare_obj(args.obj_path, topo_loader)
@@ -133,6 +129,9 @@ def main():
     skinning_weight, skeleton, vs, vs_lbs = run_single_mesh(t_pose, topo_id, test_pose, env_model, res_model)
 
     faces = topo_loader.faces[topo_id]
+
+    if not args.animated_bvh:
+        test_pose = None
     if args.envelope_only:
         write_back(args.result_path, skeleton, skinning_weight, vs_lbs, faces, args.obj_path, test_pose)
     else:
