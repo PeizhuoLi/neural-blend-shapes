@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from scipy.spatial.transform.rotation import Rotation
+from models.transforms import aa2quat, quat2euler
 
 
 # rotation with shape frame * J * 3
@@ -69,10 +69,10 @@ class WriterWrapper:
         if rot is None:
             rot = np.zeros((1, n_bone, 3))
         else:
-            rot = rot.reshape(-1, 3)
-            rot = Rotation.from_rotvec(rot)
-            rot = rot.as_euler('yzx', degrees=True)
-            rot = rot.reshape(-1, n_bone, 3)
+            rot = rot.reshape(rot.shape[0], -1, 3)
+            quat = aa2quat(rot)
+            euler = quat2euler(quat, order='xyz')
+            rot = euler
             pos = pos.repeat(rot.shape[0], 1)
         names = ['%02d' % i for i in range(n_bone)]
-        write_bvh(self.parents, offset, rot, pos, names, 1, 'yzx', filename)
+        write_bvh(self.parents, offset, rot, pos, names, 1, 'xyz', filename)
