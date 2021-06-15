@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 
 
@@ -97,6 +98,26 @@ def quat2mat(quats: torch.Tensor):
     m[..., 2, 2] = 1.0 - (xx + yy)
 
     return m
+
+
+def quat2euler(q, order='xyz', degrees=True):
+    q0 = q[..., 0]
+    q1 = q[..., 1]
+    q2 = q[..., 2]
+    q3 = q[..., 3]
+    es = torch.zeros(q0.shape + (3,), device=q.device)
+
+    if order == 'xyz':
+        es[..., 2] = torch.atan2(2 * (q0 * q3 - q1 * q2), q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3)
+        es[..., 1] = torch.asin((2 * (q1 * q3 + q0 * q2)).clip(-1, 1))
+        es[..., 0] = torch.atan2(2 * (q0 * q1 - q2 * q3), q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3)
+    else:
+        raise NotImplementedError('Cannot convert to ordering %s' % order)
+
+    if degrees:
+        es = es * 180 / np.pi
+
+    return es
 
 
 def aa2mat(rots):
