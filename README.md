@@ -32,7 +32,7 @@ We provide a pretrained model that is dedicated for biped characters. Download a
 python demo.py --pose_file=./eval_constant/sequences/greeting.npy --obj_path=./eval_constant/meshes/maynard.obj
 ~~~
 
-The nice greeting animation showed above will be saved in `demo/obj` as obj files. In addition, the generated skeleton will be saved as `demo/skeleton.bvh` and the skinning weight matrix will be saved as `demo/weight.npy`.
+The nice greeting animation showed above will be saved in `demo/obj` as obj files. In addition, the generated skeleton will be saved as `demo/skeleton.bvh` and the skinning weight matrix will be saved as `demo/weight.npy`. If you need the bvh file animated, you may specify `--animated_bvh=1`.
 
 If you are interested in traditional linear blend skinning (LBS) technique result generated with our rig, you can specify `--envelope_only=1` to evaluate our model only with the envelope branch.
 
