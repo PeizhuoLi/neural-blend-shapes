@@ -203,8 +203,8 @@ if __name__ == '__main__':
                     coff = np.load(coff_path)
 
 
-                    print(basis.shape)
-                    print(coff.shape)
+                    #print(basis.shape)
+                    #print(coff.shape)
 
 
                     verts = mesh.data.vertices
