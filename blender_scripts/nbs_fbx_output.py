@@ -125,7 +125,7 @@ if __name__ == '__main__':
             parser.add_argument('--output', dest='output_path', type=str, required=True,
                                 help='Output file or directory')
 
-            parser.add_argument('--envelope_only', dest='envelope_only', type=int, default=1,
+            parser.add_argument('--envelope_only', dest='envelope_only', type=int, default=0,
                                 help='set envelope_only')
             
             args = parser.parse_args()  
@@ -133,7 +133,7 @@ if __name__ == '__main__':
             input_dir = args.input_dir
             output_path = args.output_path
             IsEnvelope = args.envelope_only
-
+            
             obj_path = os.path.join(input_dir,'T-pose.obj')
             skeleton_path = os.path.join(input_dir,'skeleton.bvh')
             weight_path = os.path.join(input_dir,'weight.npy')
@@ -195,10 +195,11 @@ if __name__ == '__main__':
                 # basis and coff npy files are generated from params (basis_full, coff) in ./architecture/blend_shapes.py
 
                 if not (os.path.exists(basis_path) and os.path.exists(coff_path)):
+                    print("basis and coff file do not exist")
                     IsEnvelope = 1
 
                 if IsEnvelope!=1:
-
+                    print("Neural-BlendShape Model is generated")
                     basis = np.load(basis_path)
                     coff = np.load(coff_path)
 
@@ -260,7 +261,8 @@ if __name__ == '__main__':
                                 key_name = str(i).zfill(3) +'_neg'
                                 mesh.data.shape_keys.key_blocks[key_name].value = -1*coff[n][0][i]
                                 mesh.data.shape_keys.key_blocks[key_name].keyframe_insert(data_path='value', frame=n+1)
-
+                else:
+                    print("Envelope-only Model is generated")
             else :
                 print("This is Static Model")
             export_animated_mesh(output_path,skeleton,mesh,IsAnimation) 
