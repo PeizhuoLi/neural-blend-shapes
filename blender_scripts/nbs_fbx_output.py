@@ -197,7 +197,7 @@ if __name__ == '__main__':
                 if not (os.path.exists(basis_path) and os.path.exists(coff_path)):
                     IsEnvelope = 1
 
-                if IsEnvelope==0:
+                if IsEnvelope!=1:
 
                     basis = np.load(basis_path)
                     coff = np.load(coff_path)
