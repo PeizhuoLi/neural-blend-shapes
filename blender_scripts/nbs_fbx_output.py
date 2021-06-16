@@ -1,4 +1,6 @@
-#USAGE : blender -b -P nbs_fbx_output.py -- --input ../demo --output ../demo/output.fbx 
+#USAGE : blender -b -P nbs_fbx_output.py -- --input ../demo --output ../demo/output.fbx (Default : Neural-BlendShape Model )
+
+#USAGE : blender -b -P nbs_fbx_output.py -- --input ../demo --output ../demo/output.fbx --envelope_only 1 (Envelope-only Model)
 
 
 import bpy
@@ -123,19 +125,24 @@ if __name__ == '__main__':
             parser.add_argument('--output', dest='output_path', type=str, required=True,
                                 help='Output file or directory')
 
-
+            parser.add_argument('--envelope_only', dest='envelope_only', type=int, default=1,
+                                help='set envelope_only')
             
             args = parser.parse_args()  
             
             input_dir = args.input_dir
             output_path = args.output_path
-
+            IsEnvelope = args.envelope_only
 
             obj_path = os.path.join(input_dir,'T-pose.obj')
             skeleton_path = os.path.join(input_dir,'skeleton.bvh')
             weight_path = os.path.join(input_dir,'weight.npy')
             basis_path = os.path.join(input_dir,'basis.npy')
             coff_path = os.path.join(input_dir,'coff.npy')
+
+            
+
+
             init_scene()
 
             import_obj(obj_path)
@@ -183,67 +190,76 @@ if __name__ == '__main__':
                 bpy.data.scenes[0].frame_start = firstKFN
                 bpy.data.scenes[0].frame_end = lastKFN
                 print("This is Animated Model")
-                basis = np.load(basis_path)
-                coff = np.load(coff_path)
+
+                # Check if basis and coff npy files exist
+                # basis and coff npy files are generated from params (basis_full, coff) in ./architecture/blend_shapes.py
+
+                if not (os.path.exists(basis_path) and os.path.exists(coff_path)):
+                    IsEnvelope = 1
+
+                if IsEnvelope==0:
+
+                    basis = np.load(basis_path)
+                    coff = np.load(coff_path)
 
 
-                print(basis.shape)
-                print(coff.shape)
+                    print(basis.shape)
+                    print(coff.shape)
 
 
-                verts = mesh.data.vertices
+                    verts = mesh.data.vertices
 
-                #clear shape keys
-                mesh.shape_key_clear()
+                    #clear shape keys
+                    mesh.shape_key_clear()
 
-                sk_basis = mesh.shape_key_add(from_mix=False)
-
-
+                    sk_basis = mesh.shape_key_add(from_mix=False)
 
 
-                frame_num = coff.shape[0]
 
 
-                for n in range(basis.shape[2]):
-                    # Create new shape key
-                    key_name = str(n).zfill(3)
-                    
-                    sk = mesh.shape_key_add(name=key_name,from_mix=False)
-                    sk.interpolation = 'KEY_LINEAR'
+                    frame_num = coff.shape[0]
 
-                    # position each vert
-                    for i in range(len(verts)):
-                        sk.data[i].co.x += basis[0,i,n,0]
-                        sk.data[i].co.y += basis[0,i,n,1]
-                        sk.data[i].co.z += basis[0,i,n,2]
+
+                    for n in range(basis.shape[2]):
+                        # Create new shape key
+                        key_name = str(n).zfill(3)
                         
-                    sk = mesh.shape_key_add(name=key_name+'_neg',from_mix=False)
-                    sk.interpolation = 'KEY_LINEAR'
+                        sk = mesh.shape_key_add(name=key_name,from_mix=False)
+                        sk.interpolation = 'KEY_LINEAR'
 
-                    # position each vert
-                    for i in range(len(verts)):
-                        sk.data[i].co.x -= basis[0,i,n,0]
-                        sk.data[i].co.y -= basis[0,i,n,1]
-                        sk.data[i].co.z -= basis[0,i,n,2]
+                        # position each vert
+                        for i in range(len(verts)):
+                            sk.data[i].co.x += basis[0,i,n,0]
+                            sk.data[i].co.y += basis[0,i,n,1]
+                            sk.data[i].co.z += basis[0,i,n,2]
+                            
+                        sk = mesh.shape_key_add(name=key_name+'_neg',from_mix=False)
+                        sk.interpolation = 'KEY_LINEAR'
+
+                        # position each vert
+                        for i in range(len(verts)):
+                            sk.data[i].co.x -= basis[0,i,n,0]
+                            sk.data[i].co.y -= basis[0,i,n,1]
+                            sk.data[i].co.z -= basis[0,i,n,2]
 
 
-                for n in range(frame_num):
-                    for i in range(coff.shape[2]):
+                    for n in range(frame_num):
+                        for i in range(coff.shape[2]):
 
-                        if coff[n][0][i]>=0:
-                            key_name = str(i).zfill(3)
-                            mesh.data.shape_keys.key_blocks[key_name].value = coff[n][0][i]
-                            mesh.data.shape_keys.key_blocks[key_name].keyframe_insert(data_path='value', frame=n+1)
-                            key_name = str(i).zfill(3) +'_neg'
-                            mesh.data.shape_keys.key_blocks[key_name].value = 0
-                            mesh.data.shape_keys.key_blocks[key_name].keyframe_insert(data_path='value', frame=n+1)
-                        else :
-                            key_name = str(i).zfill(3)
-                            mesh.data.shape_keys.key_blocks[key_name].value = 0
-                            mesh.data.shape_keys.key_blocks[key_name].keyframe_insert(data_path='value', frame=n+1)
-                            key_name = str(i).zfill(3) +'_neg'
-                            mesh.data.shape_keys.key_blocks[key_name].value = -1*coff[n][0][i]
-                            mesh.data.shape_keys.key_blocks[key_name].keyframe_insert(data_path='value', frame=n+1)
+                            if coff[n][0][i]>=0:
+                                key_name = str(i).zfill(3)
+                                mesh.data.shape_keys.key_blocks[key_name].value = coff[n][0][i]
+                                mesh.data.shape_keys.key_blocks[key_name].keyframe_insert(data_path='value', frame=n+1)
+                                key_name = str(i).zfill(3) +'_neg'
+                                mesh.data.shape_keys.key_blocks[key_name].value = 0
+                                mesh.data.shape_keys.key_blocks[key_name].keyframe_insert(data_path='value', frame=n+1)
+                            else :
+                                key_name = str(i).zfill(3)
+                                mesh.data.shape_keys.key_blocks[key_name].value = 0
+                                mesh.data.shape_keys.key_blocks[key_name].keyframe_insert(data_path='value', frame=n+1)
+                                key_name = str(i).zfill(3) +'_neg'
+                                mesh.data.shape_keys.key_blocks[key_name].value = -1*coff[n][0][i]
+                                mesh.data.shape_keys.key_blocks[key_name].keyframe_insert(data_path='value', frame=n+1)
 
             else :
                 print("This is Static Model")
