@@ -108,7 +108,7 @@ def quat2euler(q, order='xyz', degrees=True):
     q1 = q[..., 1]
     q2 = q[..., 2]
     q3 = q[..., 3]
-    es = torch.zeros(q0.shape + (3,), device=q.device)
+    es = torch.empty(q0.shape + (3,), device=q.device, dtype=q.dtype)
 
     if order == 'xyz':
         es[..., 2] = torch.atan2(2 * (q0 * q3 - q1 * q2), q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3)
