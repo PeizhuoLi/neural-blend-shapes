@@ -101,6 +101,9 @@ def quat2mat(quats: torch.Tensor):
 
 
 def quat2euler(q, order='xyz', degrees=True):
+    """
+    Convert (w, x, y, z) quaternions to xyz euler angles. This is  used for bvh output.
+    """
     q0 = q[..., 0]
     q1 = q[..., 1]
     q2 = q[..., 2]
