@@ -100,8 +100,8 @@ def write_back(prefix, skeleton, skinning_weight, verts, faces, original_path, r
     basis = basis.detach().cpu().numpy()
     coff = coff.detach().cpu().numpy()
     np.save(pjoin(prefix, 'weight.npy'), skinning_weight)
-    np.save(pjoin(prefix, 'basis.npy'), basis)
-    np.save(pjoin(prefix, 'coff.npy'), coff)
+    np.save(pjoin(prefix, 'basis.npy'), basis.squeeze())
+    np.save(pjoin(prefix, 'coff.npy'), coff.squeeze())
     bvh_writer.write(pjoin(prefix, 'skeleton.bvh'), skeleton, rot)
 
     os.system(f"cp {original_path} {pjoin(prefix, 'T-pose.obj')}")

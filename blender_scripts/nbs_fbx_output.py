@@ -65,7 +65,7 @@ def getKeyframes(ob):
                 for key in fc.keyframe_points :
                     #print('frame:',key.co[0],'value:',key.co[1])
                     keyframe_list.append(key.co[0])
-                
+
                 keyframe_list = list(set(keyframe_list))
                 lastKFN = keyframe_list[0]
                 firstKFN = keyframe_list[-1]
@@ -79,6 +79,8 @@ def init_scene():
     
 def import_obj(filepath):
     bpy.ops.import_scene.obj(filepath=filepath,split_mode="OFF")
+    bpy.ops.object.shade_smooth()
+    # For some mysterious raison, this is necessary otherwise I cannot toggle shade smooth / shade flat
 
 def import_skeleton(filepath):
     bpy.ops.import_anim.bvh(filepath=filepath, filter_glob="*.bvh", target='ARMATURE', global_scale=1, frame_start=1, use_fps_scale=False, use_cyclic=False, rotate_mode='NATIVE', axis_forward='-Z', axis_up='Y')
@@ -221,7 +223,7 @@ if __name__ == '__main__':
                     frame_num = coff.shape[0]
 
 
-                    for n in range(basis.shape[2]):
+                    for n in range(basis.shape[1]):
                         # Create new shape key
                         key_name = str(n).zfill(3)
                         
@@ -230,26 +232,26 @@ if __name__ == '__main__':
 
                         # position each vert
                         for i in range(len(verts)):
-                            sk.data[i].co.x += basis[0,i,n,0]
-                            sk.data[i].co.y += basis[0,i,n,1]
-                            sk.data[i].co.z += basis[0,i,n,2]
+                            sk.data[i].co.x += basis[i,n,0]
+                            sk.data[i].co.y += basis[i,n,1]
+                            sk.data[i].co.z += basis[i,n,2]
                             
                         sk = mesh.shape_key_add(name=key_name+'_neg',from_mix=False)
                         sk.interpolation = 'KEY_LINEAR'
 
                         # position each vert
                         for i in range(len(verts)):
-                            sk.data[i].co.x -= basis[0,i,n,0]
-                            sk.data[i].co.y -= basis[0,i,n,1]
-                            sk.data[i].co.z -= basis[0,i,n,2]
+                            sk.data[i].co.x -= basis[i,n,0]
+                            sk.data[i].co.y -= basis[i,n,1]
+                            sk.data[i].co.z -= basis[i,n,2]
 
 
                     for n in range(frame_num):
-                        for i in range(coff.shape[2]):
+                        for i in range(coff.shape[1]):
 
-                            if coff[n][0][i]>=0:
+                            if coff[n][i]>=0:
                                 key_name = str(i).zfill(3)
-                                mesh.data.shape_keys.key_blocks[key_name].value = coff[n][0][i]
+                                mesh.data.shape_keys.key_blocks[key_name].value = coff[n][i]
                                 mesh.data.shape_keys.key_blocks[key_name].keyframe_insert(data_path='value', frame=n+1)
                                 key_name = str(i).zfill(3) +'_neg'
                                 mesh.data.shape_keys.key_blocks[key_name].value = 0
@@ -259,7 +261,7 @@ if __name__ == '__main__':
                                 mesh.data.shape_keys.key_blocks[key_name].value = 0
                                 mesh.data.shape_keys.key_blocks[key_name].keyframe_insert(data_path='value', frame=n+1)
                                 key_name = str(i).zfill(3) +'_neg'
-                                mesh.data.shape_keys.key_blocks[key_name].value = -1*coff[n][0][i]
+                                mesh.data.shape_keys.key_blocks[key_name].value = -1*coff[n][i]
                                 mesh.data.shape_keys.key_blocks[key_name].keyframe_insert(data_path='value', frame=n+1)
                 else:
                     print("Envelope-only Model is generated")
