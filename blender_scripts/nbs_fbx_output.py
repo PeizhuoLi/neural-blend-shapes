@@ -67,8 +67,8 @@ def getKeyframes(ob):
                     keyframe_list.append(key.co[0])
 
                 keyframe_list = list(set(keyframe_list))
-                lastKFN = keyframe_list[0]
-                firstKFN = keyframe_list[-1]
+                firstKFN = int(keyframe_list[0])
+                lastKFN = int(keyframe_list[-1])
                 #Only needs to check animation of one bone
                 return firstKFN, lastKFN
 
