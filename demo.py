@@ -47,7 +47,7 @@ def eval_residual(t_pose, topo_id, pose, model: BlendShapesGenerate):
     with torch.no_grad():
         t_pose = t_pose.unsqueeze(0)
         model.forward(t_pose, pose, topo_id, None)
-    return model.offsets[0]
+    return model.offsets[0], model.models['bs'].basis_full, model.models['bs'].coff
 
 
 def load_model(device, model_args, topo_loader, save_path_base, epoch_num=-1):
@@ -75,7 +75,7 @@ def load_model(device, model_args, topo_loader, save_path_base, epoch_num=-1):
 
 def run_single_mesh(verts, topo_id, pose, env_model, res_model):
     skinning_weight, skeleton = eval_envelop(verts, topo_id, env_model)
-    offset = eval_residual(verts, topo_id, pose, res_model)
+    offset, basis, coff = eval_residual(verts, topo_id, pose, res_model)
 
     local_mat = aa2mat(pose.reshape(pose.shape[0], -1, 3))
     global_mat = env_model.fk.forward(local_mat, skeleton.unsqueeze(0))
@@ -83,7 +83,7 @@ def run_single_mesh(verts, topo_id, pose, env_model, res_model):
     verts = verts[mask]
     vs = deform_with_offset(verts, skinning_weight, global_mat, offset)
     vs_lbs = deform_with_offset(verts, skinning_weight, global_mat)
-    return skinning_weight, skeleton, vs, vs_lbs
+    return skinning_weight, skeleton, vs, vs_lbs, basis, coff
 
 
 def prepare_obj(filename, topo_loader):
@@ -91,13 +91,17 @@ def prepare_obj(filename, topo_loader):
     return mesh
 
 
-def write_back(prefix, skeleton, skinning_weight, verts, faces, original_path, rot):
+def write_back(prefix, skeleton, skinning_weight, verts, faces, original_path, rot, basis, coff):
     os.makedirs(prefix, exist_ok=True)
     os.makedirs(pjoin(prefix, 'obj'), exist_ok=True)
 
     bvh_writer = WriterWrapper(parent_smpl)
     skinning_weight = skinning_weight.detach().cpu().numpy()
+    basis = basis.detach().cpu().numpy()
+    coff = coff.detach().cpu().numpy()
     np.save(pjoin(prefix, 'weight.npy'), skinning_weight)
+    np.save(pjoin(prefix, 'basis.npy'), basis)
+    np.save(pjoin(prefix, 'coff.npy'), coff)
     bvh_writer.write(pjoin(prefix, 'skeleton.bvh'), skeleton, rot)
 
     os.system(f"cp {original_path} {pjoin(prefix, 'T-pose.obj')}")
@@ -126,16 +130,16 @@ def main():
     env_model, res_model = load_model(device, model_args, topo_loader, args.model_path)
 
     t_pose, topo_id = mesh[0]
-    skinning_weight, skeleton, vs, vs_lbs = run_single_mesh(t_pose, topo_id, test_pose, env_model, res_model)
+    skinning_weight, skeleton, vs, vs_lbs, basis, coff = run_single_mesh(t_pose, topo_id, test_pose, env_model, res_model)
 
     faces = topo_loader.faces[topo_id]
 
     if not args.animated_bvh:
         test_pose = None
     if args.envelope_only:
-        write_back(args.result_path, skeleton, skinning_weight, vs_lbs, faces, args.obj_path, test_pose)
-    else:
-        write_back(args.result_path, skeleton, skinning_weight, vs, faces, args.obj_path, test_pose)
+        vs = vs_lbs
+
+    write_back(args.result_path, skeleton, skinning_weight, vs, faces, args.obj_path, test_pose, basis, coff)
 
 
 if __name__ == '__main__':
