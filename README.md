@@ -38,6 +38,21 @@ If you are interested in traditional linear blend skinning (LBS) technique resul
 
 We also provide other several meshes and animation sequences. Feel free to try their combinations!
 
+
+### FBX Output (New!)
+
+Now you can choose to output the animation as a single fbx file instead of a sequence of obj files! Simply do following:
+
+~~~bash
+python demo.py --animated_bvh=1 --obj_output=0
+cd blender_scripts
+blender -b -P nbs_fbx_output.py -- --input ../demo --output ../demo/output.fbx
+~~~
+
+Note that you need to install Blender (>=2.80) to generate the fbx file. You may explore more options on the generated fbx file in the source code.
+
+This code is contributed by [@huh8686](https://github.com/huh8686).
+
 ### Test on Customized Meshes
 
 You may try to run our model with your own meshes by pointing the `--obj_path` argument to the input mesh. Please make sure your mesh is triangulated and has a consistent upright and front facing orientation. Since our model requires the input meshes are spatially aligned, please specify `--normalize=1`. Alternatively, you can try to scale and translate your mesh to align the provided `eval_constant/meshes/smpl_std.obj` without specifying `--normalize=1`.
@@ -94,6 +109,8 @@ Meanwhile, you can import the generated skeleton (in `demo/skeleton.bvh`) to Ble
 
 ## Acknowledgements
 
+The code in `blender_scripts/nbs_fbx_output.py` is contributed by [@huh8686](https://github.com/huh8686).
+
 The code in `meshcnn` is adapted from [MeshCNN](https://github.com/ranahanocka/MeshCNN) by [@ranahanocka](https://github.com/ranahanocka/).
 
 The code in `models/skeleton.py` is adapted from [deep-motion-editing](https://github.com/DeepMotionEditing/deep-motion-editing) by [@kfiraberman](https://github.com/kfiraberman), [@PeizhuoLi](https://github.com/PeizhuoLi) and [@HalfSummer11](https://github.com/HalfSummer11).
@@ -113,7 +130,7 @@ If you use this code for your research, please cite our paper:
   journal = {ACM Transactions on Graphics (TOG)},
   volume = {40},
   number = {4},
-  pages = {1},
+  pages = {130},
   year = {2021},
   publisher = {ACM}
 }

@@ -118,6 +118,8 @@ class BlendShapesModel(nn.Module):
             res = torch.cat(res, dim=0)
         else:
             res = (coff * basis_full).sum(dim=-2)
+        self.coff = coff
+        self.basis_full = basis_full
         return res
 
     def epoch(self):
