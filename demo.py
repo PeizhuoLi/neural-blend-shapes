@@ -31,6 +31,7 @@ def get_parser():
     parser.add_argument('--normalize', type=int, default=0)
     parser.add_argument('--envelope_only', type=int, default=0)
     parser.add_argument('--animated_bvh', type=int, default=0)
+    parser.add_argument('--obj_output', type=int, default=1)
     return parser
 
 
@@ -108,9 +109,10 @@ def write_back(prefix, skeleton, skinning_weight, verts, faces, original_path, r
 
     if os.path.exists(pjoin(prefix, 'obj')):
         os.system(f"rm -r {pjoin(prefix, 'obj/*')}")
-    print('Writing back...')
-    for i in tqdm(range(verts.shape[0])):
-        write_obj(pjoin(prefix, 'obj/%05d.obj' % i), verts[i], faces)
+    if verts is not None:
+        print('Writing back...')
+        for i in tqdm(range(verts.shape[0])):
+            write_obj(pjoin(prefix, 'obj/%05d.obj' % i), verts[i], faces)
 
 
 def main():
@@ -138,6 +140,8 @@ def main():
         test_pose = None
     if args.envelope_only:
         vs = vs_lbs
+    if not args.obj_output:
+        vs = None
 
     write_back(args.result_path, skeleton, skinning_weight, vs, faces, args.obj_path, test_pose, basis, coff)
 
