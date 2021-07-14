@@ -180,14 +180,26 @@ class SMPL_Layer(Module):
         else:
             return th_verts, th_jtr
 
-    def forward_lbs(self, poses, shapes=None, v_offsets=0, dqs=False):
+    def forward_lbs(self, poses, shapes=None, v_offsets=0):
         if shapes is None:
             shapes = torch.zeros((poses.shape[0], 10), device=poses.device)
         t_pose = self.forward(torch.zeros_like(poses), shapes)[0]
         offsets = self.get_offset(shapes)
         local_mat = aa2mat(poses.reshape(poses.shape[0], -1, 3))
         global_mat = self.fk.forward(local_mat, offsets)
-        return deform_with_offset(t_pose, self.th_weights, global_mat, offset=v_offsets, dqs=dqs)
+        return deform_with_offset(t_pose, self.th_weights, global_mat, offset=v_offsets)
 
     def save_obj(self, filename, verts):
         write_obj(filename, verts, self.th_faces)
+
+    def pose_blendshapes(self, th_pose_axisang):
+        batch_size = th_pose_axisang.shape[0]
+        # Convert axis-angle representation to rotation matrix rep.
+        th_pose_rotmat = th_posemap_axisang(th_pose_axisang)
+        # Take out the first rotmat (global rotation)
+        root_rot = th_pose_rotmat[:, :9].view(batch_size, 3, 3)
+        # Take out the remaining rotmats (23 joints)
+        th_pose_rotmat = th_pose_rotmat[:, 9:]
+        th_pose_map = subtract_flat_id(th_pose_rotmat)
+
+        return torch.matmul(self.th_posedirs, th_pose_map.transpose(0, 1)).permute(2, 0, 1)

@@ -1,6 +1,6 @@
 import torch
 from models.transforms import aa2mat
-from models.deformation import LBS, deform_with_offset
+from models.deformation import deform_with_offset
 from models.kinematics import ForwardKinematics
 from models.boundingbox import BoundingBox
 from models.networks import MeshReprConv, MLPSkeleton
@@ -86,7 +86,7 @@ class EnvelopeGenerate(GenerateModelBase):
         deep_v = self.models['geo'].forward()
         return deep_v
 
-    def forward(self, t_pose, pose, topo_id, weight=None, pose_ee=None):
+    def forward(self, t_pose, pose, topo_id, pose_ee=None):
         self.set_topology(topo_id)
         self.t_pose_mapped = self.rec_model.apply_topo(t_pose)
 
@@ -136,13 +136,41 @@ class EnvelopeGenerate(GenerateModelBase):
 
         return self.res_verts
 
+    def backward(self, gt_verts, gt_verts_ee=None, gt_root_loc=None, requires_backward=True):
+        gt_verts = self.rec_model.apply_topo(gt_verts)
+        self.loss = self.loss_vert = self.criteria(self.res_verts, gt_verts)
+
+        if gt_verts_ee is not None:
+            gt_verts_ee = self.rec_model.apply_topo(gt_verts_ee)
+            self.loss_ee = self.criteria(self.res_verts_ee, gt_verts_ee)
+            self.loss = self.loss + self.loss_ee * self.args.lambda_ee
+        else:
+            self.loss_ee = None
+
+        if gt_root_loc is not None:
+            self.loss_root = self.criteria(self.skeleton[:, 0], gt_root_loc)
+            self.loss = self.loss + self.loss_root
+        else:
+            self.loss_root = None
+
+        if requires_backward:
+            self.rec_model.loss_recorder.add_scalar('loss', self.loss.item())
+            self.rec_model.loss_recorder.add_scalar('loss_vert', self.loss_vert.item())
+            if self.loss_ee is not None:
+                self.rec_model.loss_recorder.add_scalar('loss_ee', self.loss_ee.item())
+            if self.loss_root is not None:
+                self.rec_model.loss_recorder.add_scalar('loss_root', self.loss_root.item())
+            self.loss.backward()
+
 
 class BlendShapesGenerate(GenerateModelBase):
     def __init__(self, geo: MeshReprConv, att: MeshReprConv, gen: MeshReprConv, bs, args,
                  fk: ForwardKinematics):
         super(BlendShapesGenerate, self).__init__()
 
-        self.models = {'geo': geo, 'att': att, 'gen': gen, 'bs': bs}
+        self.models = {'geo': geo, 'att': att, 'gen': gen}
+        if bs is not None:
+            self.models['bs'] = bs
 
         self.args = args
         self.rec_model = geo
@@ -176,7 +204,7 @@ class BlendShapesGenerate(GenerateModelBase):
         # print(f'Evaluate {mat.shape[0]} frames on {mat.device} takes {b - a}s')
         return disp
 
-    def forward(self, t_pose, pose, topo_id, skeletons):
+    def forward(self, t_pose, pose, topo_id, skeletons=None, basis_only=False):
         self.loss = 0
         self.set_topology(topo_id)
         self.t_pose_mapped = self.rec_model.apply_topo(t_pose)
@@ -206,7 +234,7 @@ class BlendShapesGenerate(GenerateModelBase):
         self.t_pose_mapped = self.bb.denormalize(self.t_pose_mapped)
         self.basis = self.bb.denormalize_basis(self.basis)
 
-        if self.args.basis_only:
+        if basis_only:
             return self.basis
 
         # Generate deformed shape
@@ -226,3 +254,18 @@ class BlendShapesGenerate(GenerateModelBase):
         if skeletons is not None:
             self.res_verts = torch.cat(self.res_verts, dim=0)
         return self.res_verts
+
+    def backward(self, gt_basis=None, gt_verts=None, requires_backward=True):
+        if gt_basis is not None:
+            gt_basis = self.rec_model.apply_topo(gt_basis)
+            self.loss = self.criteria(self.basis, gt_basis)
+        elif gt_verts is not None:
+            shape0 = gt_verts.shape[0]
+            gt_verts = gt_verts.reshape((-1,) + gt_verts.shape[2:])
+            gt_verts = self.rec_model.apply_topo(gt_verts)
+            gt_verts = gt_verts.reshape((shape0, -1) + gt_verts.shape[1:])
+            self.loss = self.criteria(self.res_verts, gt_verts)
+
+        if requires_backward:
+            self.rec_model.loss_recorder.add_scalar('loss', self.loss.item())
+            self.loss.backward()

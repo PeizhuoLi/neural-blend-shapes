@@ -66,6 +66,26 @@ python evaluation.py
 ~~~
 
 
+## Train from Scratch
+
+We provide instructions for retraining our model.
+
+To train the model from scratch, you need to download the training set from [Google Drive](https://drive.google.com/file/d/1RSd6cPYRuzt8RYWcCVL0FFFsL42OeHA7/view?usp=sharing) or [Baidu Disk](https://pan.baidu.com/s/1J-hIVyz19hKZdwKPfS3TtQ) (uqub) and put the extracted folders under `./dataset`.
+
+The training process contains tow stages, each stage corresponding to one branch. To train the first stage, please run
+
+~~~bash
+python train.py --envelope=1 --save_path=[path to save the model] --device=[cpu/cuda:0/cuda:1/...]
+~~~
+
+Note that you may need to reinstall the PyTorch CUDA version since the provided environment only includes a PyTorch CPU version for compatibility consideration. 
+
+For the second stage, it is strongly recommended to use a pre-process to extract the blend shapes basis then start the training for much better efficiency by
+
+~~~bash
+python preprocess_bs.py --save_path=[same path as the first stage] --device=[computing device]
+python train.py --residual=1 --save_path=[same path as the first stage] --device=[computing device] --lr=1e-4
+~~~
 
 ## Blender Visualization
 
@@ -136,8 +156,3 @@ If you use this code for your research, please cite our paper:
 }
 ~~~
 
-
-
-
-
-Note: This repository is still under construction. We are planning to release the code and dataset for training soon.

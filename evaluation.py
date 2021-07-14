@@ -2,7 +2,8 @@ import torch
 import numpy as np
 from os.path import join as pjoin
 from option import TrainingOptionParser
-from demo import get_parser, load_model, run_single_mesh, parent_smpl
+from demo import get_parser, load_model, run_single_mesh
+from dataset.mesh_dataset import parent_smpl
 from dataset.load_test_anim import load_test_anim
 from dataset.smpl_layer.smpl_layer import SMPL_Layer
 from dataset.topology_loader import TopologyLoader
@@ -46,7 +47,7 @@ def main():
         gt_vs = gt_vs[:, topo_loader.v_masks[i]]
         gt_verts.append(gt_vs)
 
-        weight, skeleton, vs, vs_lbs = run_single_mesh(t_pose, smpl_topo_begin + i, test_pose, env_model, res_model)
+        weight, skeleton, vs, vs_lbs, _, _ = run_single_mesh(t_pose, smpl_topo_begin + i, test_pose, env_model, res_model)
         res_weight.append(weight)
         res_skeleton.append(skeleton)
         res_verts.append(vs)

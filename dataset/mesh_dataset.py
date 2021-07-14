@@ -1,3 +1,4 @@
+import random
 import torch
 from torch.utils.data.dataset import Dataset
 from dataset.obj_io import write_obj
@@ -11,8 +12,12 @@ from models.kinematics import ForwardKinematics
 from models.transforms import aa2mat
 
 
+parent_smpl = [-1, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 12, 13, 14, 16, 17, 18, 19, 20, 21]
+# SMPL skeleton topology
+
+
 def generate_pose(batch_size, device, uniform=False, factor=1, root_rot=False, n_bone=None, ee=None):
-    if n_bone is None: n_bone = 72 // 3
+    if n_bone is None: n_bone = 24
     if ee is not None:
         if root_rot:
             ee.append(0)
@@ -57,8 +62,8 @@ class BaseSkinnedDataset:
         if self._end_effectors is None:
             self._end_effectors = set()
             if order == 0:
-                self._end_effectors.add(7)
-                self._end_effectors.add(8)
+                # self._end_effectors.add(7)
+                # self._end_effectors.add(8)
                 self._end_effectors.add(10)
                 self._end_effectors.add(11)
             if order < 0:
@@ -112,6 +117,47 @@ class StaticMeshes(Dataset):
         write_obj(filename, verts, face)
 
 
+class SMPLDataset(BaseSkinnedDataset):
+    def __init__(self, device, prefix=None):
+        super(SMPLDataset, self).__init__(device)
+        if prefix is not None:
+            self.smpl_layer = SMPL_Layer(model_root=prefix).to(device)
+        else:
+            self.smpl_layer = SMPL_Layer().to(device)
+        self.parents = self.smpl_layer.kintree_parents
+        self.bone_num = len(self.parents)
+
+    def forward(self, pose, pose2=None, shape=None, requires_skeleton=False):
+        if shape is None:
+            shape = generate_shape(pose.shape[0], device=self.device)
+        t_pose = self.smpl_layer.forward(torch.zeros_like(pose), shape)[0]
+        deformed = self.smpl_layer.forward(pose, shape)[0]
+        offsets = self.smpl_layer.get_offset(shape)
+        if not requires_skeleton:
+            root_loc = offsets[:, 0, :]
+        else:
+            root_loc = offsets
+        if pose2 is None:
+            return deformed, t_pose, root_loc
+        else:
+            deformed2 = self.smpl_layer.forward(pose2, shape)[0]
+            return deformed, deformed2, t_pose, root_loc
+
+    def forward_multipose(self, pose, n_shape, requires_skeleton=False, residual=True):
+        shape = generate_shape(n_shape, device=self.device)
+        t_pose = self.smpl_layer.forward(torch.zeros((shape.shape[0], 72), device=self.device), shape)[0]
+        offsets = self.smpl_layer.get_offset(shape)
+        if not requires_skeleton:
+            root_loc = offsets[:, 0, :]
+        else:
+            root_loc = offsets
+        deformed = []
+        for i in range(n_shape):
+            deformed.append(self.smpl_layer.forward(pose, shape[[i]].expand(pose.shape[0], -1))[0][None, :])
+        deformed = torch.cat(deformed, dim=0)
+        return deformed, t_pose, root_loc
+
+
 class MultiGarmentDataset(BaseSkinnedDataset):
     def __init__(self, prefix, topo_loader: TopologyLoader, device, is_train=True, fk=None):
         super(MultiGarmentDataset, self).__init__(device)
@@ -125,15 +171,12 @@ class MultiGarmentDataset(BaseSkinnedDataset):
         lst = [f for f in os.listdir(prefix) if os.path.isdir(pjoin(prefix, f))]
         lst.sort()
 
-        lst = lst[:80] if is_train else lst[80:]
+        lst = lst[:80] if is_train else lst[80:]   # division on training and test
 
         self.t_pose_list = []
         self.offset_list = []
         self.weight_hires = self.smpl_hires.th_weights.to(device)
         self.weight = self.smpl.th_weights.to(device)
-
-        self.cloth_all = np.load(pjoin(prefix, 'all_cloths.npy'))
-        self.cloth_all = torch.tensor(self.cloth_all, device=device)
 
         for name in lst:
             prefix2 = pjoin(prefix, name)
@@ -144,10 +187,6 @@ class MultiGarmentDataset(BaseSkinnedDataset):
             self.t_pose_list.append(t_pose.unsqueeze(0))
             self.offset_list.append(offset.unsqueeze(0))
 
-        high2o_mask = np.array([True] * self.smpl.num_verts +
-                               [False] * (self.smpl_hires.num_verts - self.smpl.num_verts))
-        self.topo_id_hires = topo_loader.load_from_obj(pjoin(prefix, 'high_res.obj'))
-        self.topo_id = topo_loader.load_from_obj(pjoin(prefix, 'original.obj'))
         self.t_pose_list = torch.cat(self.t_pose_list, dim=0)
         self.offset_list = torch.cat(self.offset_list, dim=0)
 
@@ -155,13 +194,20 @@ class MultiGarmentDataset(BaseSkinnedDataset):
             fk = ForwardKinematics(self.parents)
         self.fk = fk
 
-    def forward(self, shape_id, poses=None, hiRes=False, v_offset=0, residual=False):
-        if poses is None:
-            poses = torch.zeros((1, self.bone_num * 3), device=self.device)
-        poses = poses.reshape(poses.shape[0], -1, 3)
+    def forward(self, pose=None, pose2=None, shape_id=None, hiRes=False, residual=False, requires_skeleton=False):
+        if pose is None:
+            pose = torch.zeros((1, self.bone_num * 3), device=self.device)
+        if shape_id is None:
+            shape_id = [random.randint(0, len(self) - 1) for _ in range(pose.shape[0])]
+        pose = pose.reshape(pose.shape[0], -1, 3)
+        if pose2 is not None:
+            pose2 = pose2.reshape(pose.shape[0], -1, 3)
         t_poses = self.t_pose_list[shape_id]
         offsets = self.offset_list[shape_id]
-        # offsets[:, 0] = 0
+        if not requires_skeleton:
+            root_loc = offsets[:, 0, :]
+        else:
+            root_loc = offsets
         if not hiRes:
             t_poses = t_poses[:, :self.smpl.num_verts]
             weight = self.weight
@@ -170,40 +216,47 @@ class MultiGarmentDataset(BaseSkinnedDataset):
             weight = self.weight_hires
             smpl = self.smpl_hires
 
-        mat = self.fk.forward(aa2mat(poses), offsets)
+        mat = self.fk.forward(aa2mat(pose), offsets)
+        if pose2 is not None:
+            mat2 = self.fk.forward(aa2mat(pose2), offsets)
 
         if residual:
-            offset = smpl.pose_blendshapes(poses)
+            offset = smpl.pose_blendshapes(pose.reshape(pose.shape[0], -1))
+            offset2 = smpl.pose_blendshapes(pose2.reshape(pose2.shape[0], -1)) if pose2 is not None else None
         else:
             offset = 0
+            offset2 = 0
 
-        res = deform_with_offset(t_poses, weight, mat, offset=v_offset + offset)
-        return res, t_poses
-
-    def forward_with_shape(self, shape_id, shapes, poses=None, hiRes=False, residual=False):
-        # todo: reduce the number of calling smpl.forward()
-        if poses is None:
-            poses = torch.zeros((1, self.bone_num * 3), device=self.device)
-        if hiRes:
-            smpl = self.smpl_hires
-            weight = self.weight_hires
+        res = deform_with_offset(t_poses, weight, mat, offset=offset)
+        if pose2 is not None:
+            res2 = deform_with_offset(t_poses, weight, mat2, offset=offset2)
+            return res, res2, t_poses, root_loc
         else:
-            smpl = self.smpl
-            weight = self.weight
-        t_poses, _ = smpl.forward(torch.zeros_like(poses), shapes)
-        offsets = smpl.get_offset(shapes)
-        cloths = self.cloth_all[shape_id, :smpl.num_verts]
-        clothed_t_poses = t_poses + cloths
+            return res, t_poses, root_loc
 
-        mat = self.fk.forward(aa2mat(poses.reshape(poses.shape[0], -1, 3)), offsets)
+    def forward_multipose(self, pose, n_shape, residual=False, requires_skeleton=False):
+        shape_id = [random.randint(0, len(self) - 1) for _ in range(n_shape)]
+        pose = pose.reshape(pose.shape[0], -1, 3)
+        t_poses = self.t_pose_list[shape_id]
+        t_poses = t_poses[:, :self.smpl.num_verts]
+        offsets = self.offset_list[shape_id]
+        if not requires_skeleton:
+            root_loc = offsets[:, 0, :]
+        else:
+            root_loc = offsets
 
         if residual:
-            offset = smpl.pose_blendshapes(poses)
+            v_offset = self.smpl.pose_blendshapes(pose.reshape(pose.shape[0], -1))
         else:
-            offset = 0
+            v_offset = 0
 
-        res = deform_with_offset(clothed_t_poses, weight, mat, offset=offset)
-        return res, clothed_t_poses
+        deformed = []
+        posemat = aa2mat(pose)
+        for i in range(n_shape):
+            mat = self.fk.forward(posemat, offsets[[i]])
+            deformed.append(deform_with_offset(t_poses[[i]], self.weight, mat, offset=v_offset)[None, :])
+        deformed = torch.cat(deformed, dim=0)
+        return deformed, t_poses, root_loc
 
     def __len__(self):
         return self.t_pose_list.shape[0]

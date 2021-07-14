@@ -94,7 +94,10 @@ def create_residual_model(device, args, topo_loader, is_train=True, parents=None
                               topo_loader=topo_loader, last_activate=False, requires_recorder=False,
                               is_cont=args.cont, last_init_div=args.offset_init_div)
 
-    coff_branch = BlendShapesModel(1, bone_num - 1, args.basis_per_bone, parent=parents, basis_as_model=False,
-                                   save_freq=args.save_freq, save_path=pjoin(save_path, 'coff/'), device=device).to(device)
+    if not args.fast_train:
+        coff_branch = BlendShapesModel(1, bone_num - 1, args.basis_per_bone, parent=parents, basis_as_model=False,
+                                       save_freq=args.save_freq, save_path=pjoin(save_path, 'coff/'), device=device).to(device)
+    else:
+        coff_branch = None
 
     return geometry_branch, att_branch, gen_branch, coff_branch
