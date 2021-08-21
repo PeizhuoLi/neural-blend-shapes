@@ -109,5 +109,7 @@ venv.bak/
 .idea/
 .nosync
 
-./dataset/Mixamo_mesh/
-./demo
+dataset/Meshes/
+dataset/smpl_model
+demo
+pre_trained
