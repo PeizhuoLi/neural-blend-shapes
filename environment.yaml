@@ -99,5 +99,4 @@ dependencies:
   - zstd=1.4.9=haebb681_0
   - pip:
     - chumpy==0.70
-    - opencv-python==4.5.1.48
     - scipy==1.6.3

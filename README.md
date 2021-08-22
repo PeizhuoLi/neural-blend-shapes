@@ -22,7 +22,8 @@ Or you may install the following packages (and their dependencies) manually:
 - tensorboard
 - tqdm
 - chumpy
-- opencv-python
+
+Note the provided environment only includes the PyTorch CPU version for compatibility consideration.
 
 ## Quick Start
 
@@ -70,6 +71,8 @@ python evaluation.py
 
 We provide instructions for retraining our model.
 
+Note that you may need to reinstall the PyTorch CUDA version since the provided environment only includes the PyTorch CPU version.
+
 To train the model from scratch, you need to download the training set from [Google Drive](https://drive.google.com/file/d/1RSd6cPYRuzt8RYWcCVL0FFFsL42OeHA7/view?usp=sharing) or [Baidu Disk](https://pan.baidu.com/s/1J-hIVyz19hKZdwKPfS3TtQ) (uqub) and put the extracted folders under `./dataset`.
 
 The training process contains tow stages, each stage corresponding to one branch. To train the first stage, please run
@@ -77,8 +80,6 @@ The training process contains tow stages, each stage corresponding to one branch
 ~~~bash
 python train.py --envelope=1 --save_path=[path to save the model] --device=[cpu/cuda:0/cuda:1/...]
 ~~~
-
-Note that you may need to reinstall the PyTorch CUDA version since the provided environment only includes a PyTorch CPU version for compatibility consideration. 
 
 For the second stage, it is strongly recommended to use a pre-process to extract the blend shapes basis then start the training for much better efficiency by
 
