@@ -51,6 +51,7 @@ def extract_cloth(prefix, dest_file):
 
 
 if __name__ == '__main__':
+    raise Exception("This module is no longer supported with MIT license's SMPL implementation")
     source = 'path-to-Multi-Garment_dataset/'
     dest = './dataset/Meshes/MultiGarment/'
     batch_fit(source, dest)

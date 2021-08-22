@@ -6,7 +6,7 @@ from os.path import join as pjoin
 import os
 from dataset.topology_loader import TopologyLoader
 import numpy as np
-from dataset.smpl_layer.smpl_layer import SMPL_Layer
+from dataset.smpl import SMPL_Layer
 from models.deformation import deform_with_offset
 from models.kinematics import ForwardKinematics
 from models.transforms import aa2mat
@@ -162,11 +162,11 @@ class MultiGarmentDataset(BaseSkinnedDataset):
     def __init__(self, prefix, topo_loader: TopologyLoader, device, is_train=True, fk=None):
         super(MultiGarmentDataset, self).__init__(device)
         self.prefix = prefix
-        self.smpl_hires = SMPL_Layer(highRes=True).to(device)
+        # self.smpl_hires = SMPL_Layer(highRes=True).to(device)
         self.smpl = SMPL_Layer().to(device)
         self.parents = self.smpl.kintree_parents
-        self.faces_hires = self.smpl_hires.th_faces
-        self.faces = self.smpl.th_faces
+        # self.faces_hires = self.smpl_hires.th_faces
+        self.faces = self.smpl.faces
         self.bone_num = len(self.parents)
         lst = [f for f in os.listdir(prefix) if os.path.isdir(pjoin(prefix, f))]
         lst.sort()
@@ -175,8 +175,8 @@ class MultiGarmentDataset(BaseSkinnedDataset):
 
         self.t_pose_list = []
         self.offset_list = []
-        self.weight_hires = self.smpl_hires.th_weights.to(device)
-        self.weight = self.smpl.th_weights.to(device)
+        # self.weight_hires = self.smpl_hires.th_weights.to(device)
+        self.weight = self.smpl.weights.to(device)
 
         for name in lst:
             prefix2 = pjoin(prefix, name)
@@ -195,6 +195,8 @@ class MultiGarmentDataset(BaseSkinnedDataset):
         self.fk = fk
 
     def forward(self, pose=None, pose2=None, shape_id=None, hiRes=False, residual=False, requires_skeleton=False):
+        if hiRes:
+            raise Exception("High resolution support is abandoned in MIT license's SMPL implementation")
         if pose is None:
             pose = torch.zeros((1, self.bone_num * 3), device=self.device)
         if shape_id is None:

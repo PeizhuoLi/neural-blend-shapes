@@ -5,7 +5,7 @@ from option import TrainingOptionParser
 from demo import get_parser, load_model, run_single_mesh
 from dataset.mesh_dataset import parent_smpl
 from dataset.load_test_anim import load_test_anim
-from dataset.smpl_layer.smpl_layer import SMPL_Layer
+from dataset.smpl import SMPL_Layer
 from dataset.topology_loader import TopologyLoader
 from models.measurement import chamfer_weight, vert_distance, chamfer_j2j, chamfer_j2b, chamfer_b2b
 from tqdm import tqdm
@@ -28,7 +28,7 @@ def main():
     smpl_topo_begin, len_topo_smpl = topo_loader.load_smpl_group('./dataset/Meshes/SMPL/topology/',
                                                                  is_train=False)
 
-    env_model, res_model = load_model(device, model_args, topo_loader, args.model_path)
+    env_model, res_model = load_model(device, model_args, topo_loader, args.model_path, envelope_only=False)
 
     res_weight = []
     res_skeleton = []
@@ -47,7 +47,7 @@ def main():
         gt_vs = gt_vs[:, topo_loader.v_masks[i]]
         gt_verts.append(gt_vs)
 
-        weight, skeleton, vs, vs_lbs, _, _ = run_single_mesh(t_pose, smpl_topo_begin + i, test_pose, env_model, res_model)
+        weight, skeleton, vs, vs_lbs, _, _ = run_single_mesh(t_pose, smpl_topo_begin + i, test_pose, env_model, res_model, requires_lbs=True)
         res_weight.append(weight)
         res_skeleton.append(skeleton)
         res_verts.append(vs)
@@ -64,7 +64,7 @@ def main():
     print('Aggregating error...')
     for i in tqdm(range(test_shape.shape[0])):
         mask = topo_loader.v_masks[i]
-        weight_gt = smpl.th_weights[mask]
+        weight_gt = smpl.weights[mask]
         err_weight.append(chamfer_weight(res_weight[i], weight_gt))
 
         err_vert = vert_distance(res_verts[i], gt_verts[i])

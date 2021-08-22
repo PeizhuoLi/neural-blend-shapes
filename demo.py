@@ -77,7 +77,7 @@ def load_model(device, model_args, topo_loader, save_path_base, envelope_only, e
     return envelop_model, residual_model
 
 
-def run_single_mesh(verts, topo_id, pose, env_model, res_model):
+def run_single_mesh(verts, topo_id, pose, env_model, res_model, requires_lbs=False):
     skinning_weight, skeleton = eval_envelop(verts, topo_id, env_model)
     if res_model is not None:
         offset, basis, coff = eval_residual(verts, topo_id, pose, res_model)
@@ -91,6 +91,9 @@ def run_single_mesh(verts, topo_id, pose, env_model, res_model):
     mask = env_model.rec_model.topo_loader.v_masks[topo_id]
     verts = verts[mask]
     vs = deform_with_offset(verts, skinning_weight, global_mat, offset)
+    if requires_lbs:
+        vs_lbs = deform_with_offset(verts, skinning_weight, global_mat)
+        return skinning_weight, skeleton, vs, vs_lbs, basis, coff
     return skinning_weight, skeleton, vs, basis, coff
 
 
