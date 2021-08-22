@@ -135,7 +135,7 @@ The code in `meshcnn` is adapted from [MeshCNN](https://github.com/ranahanocka/M
 
 The code in `models/skeleton.py` is adapted from [deep-motion-editing](https://github.com/DeepMotionEditing/deep-motion-editing) by [@kfiraberman](https://github.com/kfiraberman), [@PeizhuoLi](https://github.com/PeizhuoLi) and [@HalfSummer11](https://github.com/HalfSummer11).
 
-The code in `dataset/smpl_layer` is adapted from [smpl_pytorch](https://github.com/gulvarol/smplpytorch) by [@gulvarol](https://github.com/gulvarol).
+The code in `dataset/smpl.py` is adapted from [SMPL](https://github.com/CalciferZh/SMPL) by [@CalciferZh](https://github.com/CalciferZh).
 
 Part of the test models are taken from [SMPL](https://smpl.is.tue.mpg.de/en), [MultiGarmentNetwork](https://github.com/bharat-b7/MultiGarmentNetwork) and [Adobe Mixamo](https://www.mixamo.com).
 
