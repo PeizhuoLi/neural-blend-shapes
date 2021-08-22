@@ -3,37 +3,56 @@ import pickle
 import torch
 from torch.nn import Module
 import os
-from time import time
 
 
 class SMPL_Layer(Module):
-    def __init__(self, device=None, model_path='./model.pkl'):
-
+    def __init__(self, model_root='./dataset/smpl_model', gender='neutral'):
         super(SMPL_Layer, self).__init__()
-        with open(model_path, 'rb') as f:
-            params = pickle.load(f)
-        self.J_regressor = torch.from_numpy(
+
+        if gender == 'neutral':
+            self.model_path = os.path.join(model_root, 'basicModel_neutral_lbs_10_207_0_v1.0.0.pkl')
+        elif gender == 'female':
+            self.model_path = os.path.join(model_root, 'basicModel_f_lbs_10_207_0_v1.0.0.pkl')
+        elif gender == 'male':
+            self.model_path = os.path.join(model_root, 'basicModel_m_lbs_10_207_0_v1.0.0.pkl')
+
+        with open(self.model_path, 'rb') as f:
+            params = pickle.load(f, encoding='latin1')
+        # self.J_regressor = torch.from_numpy(
+        #     np.array(params['J_regressor'].todense())
+        # ).type(torch.float)
+        self.register_buffer('J_regressor', torch.from_numpy(
             np.array(params['J_regressor'].todense())
-        ).type(torch.float64)
+        ).type(torch.float))
         if 'joint_regressor' in params.keys():
-            self.joint_regressor = torch.from_numpy(
+            # self.joint_regressor = torch.from_numpy(
+            #     np.array(params['joint_regressor'].T.todense())
+            # ).type(torch.float)
+            self.register_buffer('joint_regressor', torch.from_numpy(
                 np.array(params['joint_regressor'].T.todense())
-            ).type(torch.float64)
+            ).type(torch.float))
         else:
-            self.joint_regressor = torch.from_numpy(
+            # self.joint_regressor = torch.from_numpy(
+            #     np.array(params['J_regressor'].todense())
+            # ).type(torch.float)
+            self.register_buffer('joint_regressor', torch.from_numpy(
                 np.array(params['J_regressor'].todense())
-            ).type(torch.float64)
-        self.weights = torch.from_numpy(params['weights']).type(torch.float64)
-        self.posedirs = torch.from_numpy(params['posedirs']).type(torch.float64)
-        self.v_template = torch.from_numpy(params['v_template']).type(torch.float64)
-        self.shapedirs = torch.from_numpy(params['shapedirs']).type(torch.float64)
+            ).type(torch.float))
+        # self.weights = torch.from_numpy(params['weights']).type(torch.float)
+        self.register_buffer('weights', torch.from_numpy(params['weights']).type(torch.float))
+        # self.posedirs = torch.from_numpy(params['posedirs']).type(torch.float)
+        self.register_buffer('posedirs', torch.from_numpy(params['posedirs']).type(torch.float))
+        # self.v_template = torch.from_numpy(params['v_template']).type(torch.float)
+        self.register_buffer('v_template', torch.from_numpy(params['v_template']).type(torch.float))
+        # self.shapedirs = torch.from_numpy(params['shapedirs']).type(torch.float)
+        self.register_buffer('shapedirs', torch.from_numpy(params['shapedirs'].r).type(torch.float))
         self.kintree_table = params['kintree_table']
+        parents = list(self.kintree_table[0].tolist())
+        self.kintree_parents = parents
         self.faces = params['f']
-        self.device = device if device is not None else torch.device('cpu')
-        for name in ['J_regressor', 'joint_regressor', 'weights', 'posedirs', 'v_template', 'shapedirs']:
-            _tensor = getattr(self, name)
-            print(' Tensor {} shape: '.format(name), _tensor.shape)
-            setattr(self, name, _tensor.to(device))
+
+        self.num_joints = len(parents)  # 24
+        self.num_verts = self.v_template.shape[0]
 
     @staticmethod
     def rodrigues(r):
@@ -50,18 +69,18 @@ class SMPL_Layer(Module):
         Rotation matrix of shape [batch_size * angle_num, 3, 3].
 
         """
-        eps = r.clone().normal_(std=1e-8)
+        eps = 1e-8
         theta = torch.norm(r + eps, dim=(1, 2), keepdim=True)  # dim cannot be tuple
         theta_dim = theta.shape[0]
         r_hat = r / theta
         cos = torch.cos(theta)
-        z_stick = torch.zeros(theta_dim, dtype=torch.float64).to(r.device)
+        z_stick = torch.zeros(theta_dim, dtype=torch.float).to(r.device)
         m = torch.stack(
             (z_stick, -r_hat[:, 0, 2], r_hat[:, 0, 1], r_hat[:, 0, 2], z_stick,
              -r_hat[:, 0, 0], -r_hat[:, 0, 1], r_hat[:, 0, 0], z_stick), dim=1)
         m = torch.reshape(m, (-1, 3, 3))
-        i_cube = (torch.eye(3, dtype=torch.float64).unsqueeze(dim=0) \
-                  + torch.zeros((theta_dim, 3, 3), dtype=torch.float64)).to(r.device)
+        i_cube = (torch.eye(3, dtype=torch.float).unsqueeze(dim=0)
+                  + torch.zeros((theta_dim, 3, 3), dtype=torch.float)).to(r.device)
         A = r_hat.permute(0, 2, 1)
         dot = torch.matmul(A, r_hat)
         R = cos * i_cube + (1 - cos) * dot + torch.sin(theta) * m
@@ -82,7 +101,7 @@ class SMPL_Layer(Module):
 
         """
         ones = torch.tensor(
-            [[[0.0, 0.0, 0.0, 1.0]]], dtype=torch.float64
+            [[[0.0, 0.0, 0.0, 1.0]]], dtype=torch.float
         ).expand(x.shape[0], -1, -1).to(x.device)
         ret = torch.cat((x, ones), dim=1)
         return ret
@@ -102,19 +121,19 @@ class SMPL_Layer(Module):
 
         """
         zeros43 = torch.zeros(
-            (x.shape[0], x.shape[1], 4, 3), dtype=torch.float64).to(x.device)
+            (x.shape[0], x.shape[1], 4, 3), dtype=torch.float).to(x.device)
         ret = torch.cat((zeros43, x), dim=3)
         return ret
 
-    def write_obj(self, verts, file_name):
-        with open(file_name, 'w') as fp:
+    def save_obj(self, filename, verts):
+        with open(filename, 'w') as fp:
             for v in verts:
                 fp.write('v %f %f %f\n' % (v[0], v[1], v[2]))
 
             for f in self.faces + 1:
                 fp.write('f %d %d %d\n' % (f[0], f[1], f[2]))
 
-    def forward(self, betas, pose, trans, simplify=False):
+    def forward(self, pose, betas, trans=None, simplify=False):
 
         """
               Construct a compute graph that takes in parameters and outputs a tensor as
@@ -148,14 +167,16 @@ class SMPL_Layer(Module):
         }
         v_shaped = torch.tensordot(betas, self.shapedirs, dims=([1], [2])) + self.v_template
         J = torch.matmul(self.J_regressor, v_shaped)
-        R_cube_big = self.rodrigues(pose.view(-1, 1, 3)).reshape(batch_num, -1, 3, 3)
+        R_cube_big = self.rodrigues(pose.reshape(-1, 1, 3)).reshape(batch_num, -1, 3, 3)
+
+        device = self.weights.device
 
         if simplify:
             v_posed = v_shaped
         else:
             R_cube = R_cube_big[:, 1:, :, :]
-            I_cube = (torch.eye(3, dtype=torch.float64).unsqueeze(dim=0) + \
-                      torch.zeros((batch_num, R_cube.shape[1], 3, 3), dtype=torch.float64)).to(self.device)
+            I_cube = (torch.eye(3, dtype=torch.float).unsqueeze(dim=0) + \
+                      torch.zeros((batch_num, R_cube.shape[1], 3, 3), dtype=torch.float)).to(device)
             lrotmin = (R_cube - I_cube).reshape(batch_num, -1, 1).squeeze(dim=2)
             v_posed = v_shaped + torch.tensordot(lrotmin, self.posedirs, dims=([1], [2]))
 
@@ -182,54 +203,50 @@ class SMPL_Layer(Module):
                       torch.matmul(
                           stacked,
                           torch.reshape(
-                              torch.cat((J, torch.zeros((batch_num, 24, 1), dtype=torch.float64).to(self.device)),
+                              torch.cat((J, torch.zeros((batch_num, 24, 1), dtype=torch.float).to(device)),
                                         dim=2),
                               (batch_num, 24, 4, 1)
                           )
                       )
                   )
-        # Restart from here
+
         T = torch.tensordot(results, self.weights, dims=([1], [1])).permute(0, 3, 1, 2)
+
         rest_shape_h = torch.cat(
-            (v_posed, torch.ones((batch_num, v_posed.shape[1], 1), dtype=torch.float64).to(self.device)), dim=2
+            (v_posed, torch.ones((batch_num, v_posed.shape[1], 1), dtype=torch.float).to(device)), dim=2
         )
         v = torch.matmul(T, torch.reshape(rest_shape_h, (batch_num, -1, 4, 1)))
         v = torch.reshape(v, (batch_num, -1, 4))[:, :, :3]
-        result = v + torch.reshape(trans, (batch_num, 1, 3))
-        # estimate 3D joint locations
-        # print(result.shape)
-        # print(self.joint_regressor.shape)
-        joints = torch.tensordot(result, self.joint_regressor, dims=([1], [0])).transpose(1, 2)
-        return result, joints
 
+        result = v if trans is None else v + torch.reshape(trans, (batch_num, 1, 3))
 
-def test_gpu(gpu_id=[0]):
-    if len(gpu_id) > 0 and torch.cuda.is_available():
-        os.environ['CUDA_VISIBLE_DEVICES'] = str(gpu_id[0])
-        device = torch.device('cuda')
-    else:
-        device = torch.device('cpu')
-    # print(device)
+        joints = torch.tensordot(result, self.joint_regressor, dims=([1], [1])).transpose(1, 2)
+        return result.detach(), joints
 
-    pose_size = 72
-    beta_size = 10
+    def forward_lbs(self, poses, shapes=None, v_offsets=0):
+        if shapes is None:
+            shapes = torch.zeros((poses.shape[0], 10), device=poses.device)
+        return self.forward(poses, shapes, simplify=True)[0] + v_offsets
 
-    np.random.seed(9608)
-    model = SMPLModel(device=device)
-    for i in range(10):
-        pose = torch.from_numpy((np.random.rand(32, pose_size) - 0.5) * 0.4) \
-            .type(torch.float64).to(device)
-        betas = torch.from_numpy((np.random.rand(32, beta_size) - 0.5) * 0.06) \
-            .type(torch.float64).to(device)
-        s = time()
-        trans = torch.from_numpy(np.zeros((32, 3))).type(torch.float64).to(device)
-        result, joints = model(betas, pose, trans)
-        print(time() - s)
+    def pose_blendshapes(self, pose):
+        device = pose.device
+        batch_num = pose.shape[0]
+        R_cube_big = self.rodrigues(pose.view(-1, 1, 3)).reshape(batch_num, -1, 3, 3)
 
-    # outmesh_path = './smpl_torch_{}.obj'
-    # for i in range(result.shape[0]):
-    # model.write_obj(result[i], outmesh_path.format(i))
+        R_cube = R_cube_big[:, 1:, :, :]
+        I_cube = (torch.eye(3, dtype=torch.float).unsqueeze(dim=0) +
+                  torch.zeros((batch_num, R_cube.shape[1], 3, 3), dtype=torch.float)).to(device)
+        lrotmin = (R_cube - I_cube).reshape(batch_num, -1, 1).squeeze(dim=2)
+        return torch.tensordot(lrotmin, self.posedirs, dims=([1], [2]))
 
-
-if __name__ == '__main__':
-    test_gpu([1])
+    def get_offset(self, shapes=torch.zeros((1, 10))):
+        batch_size = shapes.shape[0]
+        parent_smpl = self.kintree_parents
+        t_pose, j_loc = self.forward(torch.zeros((batch_size, 24 * 3), device=shapes.device), shapes)
+        for i in list(range(len(parent_smpl)))[::-1]:
+            if i == 0:
+                break
+            p = parent_smpl[i]
+            j_loc[:, i] -= j_loc[:, p]
+        offset = j_loc
+        return offset
