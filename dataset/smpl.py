@@ -45,7 +45,7 @@ class SMPL_Layer(Module):
         # self.v_template = torch.from_numpy(params['v_template']).type(torch.float)
         self.register_buffer('v_template', torch.from_numpy(params['v_template']).type(torch.float))
         # self.shapedirs = torch.from_numpy(params['shapedirs']).type(torch.float)
-        self.register_buffer('shapedirs', torch.from_numpy(params['shapedirs'].r).type(torch.float))
+        self.register_buffer('shapedirs', torch.tensor(params['shapedirs'].r).type(torch.float))
         self.kintree_table = params['kintree_table']
         parents = list(self.kintree_table[0].tolist())
         self.kintree_parents = parents
